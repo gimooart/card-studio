@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>معرض البطاقات الواعية</title>
+  <style>
+    body { font-family: sans-serif; direction: rtl; padding: 10px; background: #f9f9ff; }
+    .card { border: 2px solid #008cff; border-radius: 15px; padding: 10px; margin: 10px; background: #fff; }
+    .card img { width: 100%; border-radius: 10px; }
+    .button { margin: 5px; padding: 6px 12px; border: none; border-radius: 6px; color: white; cursor: pointer; }
+    .add-btn { background: #00b894; }
+    .edit-btn { background: #004d99; }
+    .delete-btn { background: #d63031; }
+    .restore-btn { background: #00b894; }
+    .trash-btn { background: #636e72; }
+    .form { display: none; margin: 20px auto; max-width: 300px; background: #fff; padding: 10px; border-radius: 10px; }
+    input, textarea { width: 100%; margin-bottom: 8px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <h3 style="text-align:center;">معرض البطاقات الواعية</h3>
+  <div style="text-align:center;">
+    <button class="button add-btn" onclick="newCard()">بطاقة جديدة</button>
+    <button class="button trash-btn" onclick="showTrash()">سلة المهملات</button>
+  </div>
+
+  <div id="cards"></div>
+  <div id="trash" style="display:none;"></div>
+
+  <div id="form" class="form">
+    <input type="hidden" id="index">
+    <input type="text" id="name" placeholder="الاسم">
+    <input type="text" id="title" placeholder="المهنة">
+    <input type="text" id="image" placeholder="رابط الصورة">
+    <input type="text" id="whatsapp" placeholder="رقم واتساب">
+    <textarea id="bio" rows="3" placeholder="نبذة (سطر لكل فكرة)"></textarea>
+    <input type="text" id="signature" placeholder="التوقيع">
+    <button class="button edit-btn" onclick="saveCard()">حفظ</button>
+  </div>
+
+  <div style="text-align:center; margin-top:20px;">
+    <a href="https://gamalkhater.github.io/The-world-of-books-/cards.html" target="_blank" class="button" style="background:#6c5ce7;">فتح النسخة الكاملة على الويب</a>
+  </div>
+
+  <script>
+    const STORAGE = "gimo_cards", TRASH = "gimo_trash";
+    let cards = JSON.parse(localStorage.getItem(STORAGE)) || [];
+    let trash = JSON.parse(localStorage.getItem(TRASH)) || [];
+
+    function render() {
+      const container = document.getElementById("cards");
+      container.innerHTML = "";
+      cards.forEach((c, i) => {
+        container.innerHTML += `
+          <div class="card">
+            <img src="${c.image}" alt="${c.name}">
+            <h4>${c.name}</h4>
+            <p>${c.title}</p>
+            ${c.whatsapp ? `<a href="https://wa.me/${c.whatsapp}" target="_blank" class="button" style="background:#25D366;">واتساب</a>` : ""}
+            <button class="button edit-btn" onclick="editCard(${i})">تعديل</button>
+            <button class="button delete-btn" onclick="deleteCard(${i})">حذف</button>
+            <p style="font-size:12px; color:#666;">${c.bio.join("<br>")}</p>
+            <div style="font-style:italic; color:#aaa;">${c.signature}</div>
+          </div>`;
+      });
+    }
+
+    function newCard() {
+      document.getElementById("index").value = "";
+      document.getElementById("name").value = "";
+      document.getElementById("title").value = "";
+      document.getElementById("image").value = "";
+      document.getElementById("whatsapp").value = "";
+      document.getElementById("bio").value = "";
+      document.getElementById("signature").value = "";
+      document.getElementById("form").style.display = "block";
+    }
+
+    function editCard(i) {
+      const c = cards[i];
+      document.getElementById("index").value = i;
+      document.getElementById("name").value = c.name;
+      document.getElementById("title").value = c.title;
+      document.getElementById("image").value = c.image;
+      document.getElementById("whatsapp").value = c.whatsapp;
+      document.getElementById("bio").value = c.bio.join("\n");
+      document.getElementById("signature").value = c.signature;
+      document.getElementById("form").style.display = "block";
+    }
+
+    function saveCard() {
+      const i = document.getElementById("index").value;
+      const card = {
+        name: document.getElementById("name").value,
+        title: document.getElementById("title").value,
+        image: document.getElementById("image").value,
+        whatsapp: document.getElementById("whatsapp").value,
+        bio: document.getElementById("bio").value.split("\n"),
+        signature: document.getElementById("signature").value
+      };
+      if (i === "") cards.push(card);
+      else cards[i] = card;
+      localStorage.setItem(STORAGE, JSON.stringify(cards));
+      document.getElementById("form").style.display = "none";
+      render();
+    }
+
+    function deleteCard(i) {
+      if (confirm("نقل البطاقة إلى سلة المهملات؟")) {
+        trash.push(cards.splice(i, 1)[0]);
+        localStorage.setItem(STORAGE, JSON.stringify(cards));
+        localStorage.setItem(TRASH, JSON.stringify(trash));
+        render();
+      }
+    }
+
+    function showTrash() {
+      const container = document.getElementById("trash");
+      container.style.display = "block";
+      container.innerHTML = "<h4>سلة المهملات</h4>";
+      trash.forEach((c, i) => {
+        container.innerHTML += `
+          <div class="card" style="border-style:dashed;">
+            <img src="${c.image}" alt="${c.name}">
+            <h4>${c.name}</h4>
+            <p>${c.title}</p>
+            <button class="button restore-btn" onclick="restore(${i})">استرجاع</button>
+            <button class="button delete-btn" onclick="purge(${i})">حذف نهائي</button>
+          </div>`;
+      });
+    }
+
+    function restore(i) {
+      cards.push(trash.splice(i, 1)[0]);
+      localStorage.setItem(STORAGE, JSON.stringify(cards));
+      localStorage.setItem(TRASH, JSON.stringify(trash));
+      render(); showTrash();
+    }
+
+    function purge(i) {
+      if (confirm("حذف البطاقة نهائيًا؟")) {
+        trash.splice(i, 1);
+        localStorage.setItem(TRASH, JSON.stringify(trash));
+        showTrash();
+      }
+    }
+
+    window.onload = render;
+  </script>
+</body>
+</html>
